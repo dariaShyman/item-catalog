@@ -1,0 +1,49 @@
+{% extends "./layout.html" %}
+{% block content %}
+<div class="page-info">
+    <h2 class="page-headline">
+        Update info about {{item.slug}}
+    </h2>
+    <form action="{{url_for('editItem', item_slug = item.slug)}}" method='POST'>
+        <label for="name" class="form-label">Name of your art space</label>
+        <input type="text" class="form-input" name="name"
+            value="{{item.name}}" placeholder="{{item.name}}">
+
+        <label for="description" class="form-label">Short description</label>
+        <input type="text" class="form-input" name="description"
+            value="{{item.description}}" placeholder="{{item.description}}">
+
+        <label for="description" class="form-label">Address</label>
+        <input type="text" class="form-input" name="address"
+            value="{{item.address}}" placeholder="{{item.address}}">
+
+        <label for="name" class="form-label">Type of location</label>
+        <select name="category" class="form-select">
+            {% for category in categories %}
+                {% if item and item.category_id == category.id %} 
+                    <option
+                        id="{{category.id}}"
+                        value="{{category.id}}"
+                        selected
+                    >{{category.name}}</option>
+                {% else %}
+                    <option
+                        id="{{category.id}}"
+                        value="{{category.id}}"
+                    >{{category.name}}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+
+        <div class="button-wrapper">
+            <button
+                type='submit'
+                value='submit'
+                class="form-button form-button--active"
+            >Edit</button>
+            <a class="form-button" href="{{url_for('showCategoryList')}}">Cancel</a>
+        </div>
+
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "./layout.html" %}
+{% block content %}
+<div class="page-info">
+    <h2 class="page-headline">Are you sure you want to delete {{item.name}}?</h2>
+    <form action="{{url_for('deleteItem', item_slug = item.slug)}}" method='POST'>
+        <div class="button-wrapper">
+            <button type='submit'
+                value='submit'
+                class="form-button form-button--active"
+            >Delete</button>
+            <a class="form-button" href="{{url_for('showCategoryList')}}">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

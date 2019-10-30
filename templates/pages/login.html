@@ -1,0 +1,21 @@
+{% extends "./layout.html" %}
+{% block content %}
+<div class="page-info">
+    <h2 class="page-headline">Select you login method</h2>
+
+    <div class="button-wrapper">
+        <button class="btn btn-google" id="signinGoogle">
+            <span>Sign in with Google</span>
+        </button>
+        <button class="btn btn-facebook" id="signinFb">
+            <span>Sign in with Facebook</span>
+        </button>
+    </div>
+
+    <div id="result"></div>
+</div>
+
+{% include "./scripts/facebook-login.html" %}
+{% include "./scripts/google-login.html" %}
+
+{% endblock %}

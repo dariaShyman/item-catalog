@@ -1,0 +1,9 @@
+{% extends "./layout.html" %}
+{% block content %}
+    {% include "./components/side-menu.html" %}
+    <div class="page-info">
+        <h2 class="page-headline">{{item.name}}</h2>
+        <div class="item-description">{{item.description}}</div>
+        <div class="item-category">{{item.address}}</div>
+    </div>
+{% endblock %}

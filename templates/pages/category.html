@@ -1,0 +1,22 @@
+{% extends "./layout.html" %}
+{% block content %}
+    {% include "./components/side-menu.html" %}
+
+    <div class="page-info">
+        {% include "./components/add-new-item.html" %}
+        {% if count != 0 %}
+        <h2 class="page-headline">{{category.name}} ({{count}} art spaces)</h2>
+            {% for item in items %}
+                <span class="item-category">{{item.address}}</span>
+                <a class="item"
+                    href="{{url_for('showItem',category_slug=item.category.slug, item_slug=item.slug)}}">
+                    <span class="item-name">{{item.name}}</span> - 
+                    <span>{{item.description}}</span>
+                </a>
+            {% endfor %}
+        {% else %}
+            <h2>{{category.name}}</h2>
+            <div>Currently you have no items</div>
+        {% endif %}
+    </div>
+{% endblock %}

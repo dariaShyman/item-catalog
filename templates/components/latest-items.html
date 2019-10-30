@@ -1,0 +1,12 @@
+<div class="items">
+    <h2 class="page-headline">Recently added venues</h2>
+    {% for item in latestItems %}
+        <a class="item"
+            href="{{url_for('showItem',category_slug=item.category.slug, item_slug=item.slug)}}"
+        >
+            <span class="item-name">{{item.name}}</span> - 
+            <span>{{item.description}}</span>
+            <span class="item-category">({{item.category.name}})</span>
+        </a>
+    {% endfor %}
+</div>

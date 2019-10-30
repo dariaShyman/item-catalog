@@ -1,0 +1,8 @@
+{% extends "./layout.html" %}
+{% block content %}
+    {% include "./components/side-menu.html" %}
+    <div class="page-info">
+        {% include "./components/add-new-item.html" %}
+        {% include "./components/latest-items.html" %}
+    </div>
+{% endblock %}
