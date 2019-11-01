@@ -31,12 +31,12 @@ app = Flask(__name__)
 # Create database & session
 engine = create_engine(
     'sqlite:///appdata.db',
-    connect_args = {'check_same_thread': False},
-    echo = True
+    connect_args={'check_same_thread': False},
+    echo=True
 )
 Base.metadata.bind = engine
 
-DBSession = sessionmaker(bind = engine)
+DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 # Application credentials
@@ -54,16 +54,18 @@ APPLICATION_NAME = "NeverBoringBerlin"
 
 @app.route('/login')
 def showLogin():
-    # Create anti-forgery state token
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                    for x in xrange(32))
+    """Create anti-forgery state token and generate login template"""
+    state = ''.join(random.choices(
+        string.ascii_uppercase + string.digits, k=32)
+    )
+
     login_session['state'] = state
-    return render_template('pages/login.html', STATE = state)
+    return render_template('pages/login.html', STATE=state)
 
 
-# Facebook connect validation
-@app.route('/fbconnect', methods = ['POST'])
+@app.route('/fbconnect', methods=['POST'])
 def fbconnect():
+    """Facebook connect validation"""
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -72,7 +74,6 @@ def fbconnect():
 
     # Get authorization token
     access_token = request.data
-    print(access_token)
 
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
         'web']['app_id']
@@ -153,9 +154,9 @@ def fbconnect():
     return output
 
 
-# Google connect validation
-@app.route('/gconnect', methods = ['POST'])
+@app.route('/gconnect', methods=['POST'])
 def gconnect():
+    """Google connect validation"""
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -167,7 +168,7 @@ def gconnect():
         # Upgrade the authorization code into a credentials object
         oauth_flow = flow_from_clientsecrets(
             'client_secrets.json',
-            scope = ''
+            scope=''
         )
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
@@ -206,7 +207,7 @@ def gconnect():
 
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
-    if stored_access_token is not None and gplus_id  ==  stored_gplus_id:
+    if stored_access_token is not None and gplus_id == stored_gplus_id:
         response = make_response(json.dumps(
             'Current user is already connected.'
             ), 200)
@@ -220,7 +221,7 @@ def gconnect():
     # Get user info
     userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
     params = {'access_token': credentials.access_token, 'alt': 'json'}
-    answer = requests.get(userinfo_url, params = params)
+    answer = requests.get(userinfo_url, params=params)
 
     # Set session data
     data = answer.json()
@@ -238,11 +239,11 @@ def gconnect():
 
     # Display successful login message
     output = ''
-    output +=  '<h1>Welcome, '
-    output +=  login_session['username']
-    output +=  '!</h1>'
-    output +=  '<img src = "'
-    output +=  login_session['picture']
+    output += '<h1>Welcome, '
+    output += login_session['username']
+    output += '!</h1>'
+    output += '<img src = "'
+    output += login_session['picture']
     output += (
         ' " style="width: 150px; '
         'height: 150px;border-radius: 75px;'
@@ -254,50 +255,53 @@ def gconnect():
     return output
 
 
-# Create user from the Google or Facebook connect
 def createUser(login_session):
-    newUser = User(name = login_session['username'],
-        email = login_session['email'],
-        picture = login_session['picture'])
+    """Create user from the Google or Facebook connect"""
+    newUser = User(
+        name=login_session['username'],
+        email=login_session['email'],
+        picture=login_session['picture'])
     session.add(newUser)
     session.commit()
-    user = session.query(User).filter_by(email = login_session['email']).one()
+    user = session.query(User).filter_by(email=login_session['email']).one()
     return user.id
 
-# Get session user data
+
 def getUserInfo(user_id):
-    user = session.query(User).filter_by(id = user_id).one()
+    """Get session user data"""
+    user = session.query(User).filter_by(id=user_id).one()
     return user
 
-# Get session user id
+
 def getUserID(email):
+    """Get session user id"""
     try:
-        user = session.query(User).filter_by(email = email).one()
+        user = session.query(User).filter_by(email=email).one()
         return user.id
     except:
         return None
 
 
-# Facebook disconnect
 @app.route('/fbdisconnect')
 def fbdisconnect():
+    """Facebook disconnect"""
     facebook_id = login_session['facebook_id']
     # Included the session access token to successfully logout
     access_token = login_session['access_token']
     url = (
         'https://graph.facebook.com/%s/permissions?access_token=%s'
-        % (facebook_id,access_token)
+        % (facebook_id, access_token)
     )
     h = httplib2.Http()
     h.request(url, 'DELETE')[1]
     return "You have been logged out"
 
 
-# Google disconnect
 @app.route('/gdisconnect')
 def gdisconnect():
-    # Only disconnect a connected user.
+    """Google disconnect"""
     access_token = login_session.get('access_token')
+    # Only disconnect a connected user.
     if access_token is None:
         response = make_response(
             json.dumps('Current user not connected.'), 401)
@@ -323,9 +327,9 @@ def gdisconnect():
         return response
 
 
-# Disconnect based on provider
 @app.route('/disconnect')
 def disconnect():
+    """Disconnect based on provider"""
     if 'provider' in login_session:
         if login_session['provider'] == 'google':
             gdisconnect()
@@ -364,14 +368,14 @@ def getSlug(name):
     return noSpaces.strip('-')
 
 # ---------------------------------------------------------
-# Template rendering 
+# Template rendering
 # ---------------------------------------------------------
 
 
-# Display all categories and 6 latest items
 @app.route('/')
 @app.route('/locations')
 def showCategoryList():
+    """Display all categories and 6 latest items"""
     categories = session.query(Category).all()
     latestItems = session.query(Item).order_by(
         Item.id.desc()).limit(6)
@@ -379,64 +383,64 @@ def showCategoryList():
     if 'username' not in login_session:
         return render_template(
             'pages/public-category-list.html',
-            categories = categories,
-            latestItems = latestItems)
+            categories=categories,
+            latestItems=latestItems)
     else:
         return render_template(
             'pages/category-list.html',
-            categories = categories,
-            latestItems = latestItems)
+            categories=categories,
+            latestItems=latestItems)
 
 
-# Display all items in a specific category
 @app.route('/locations/<string:category_slug>/')
 def showCategory(category_slug):
+    """Display all items in a specific category"""
     categories = session.query(Category).all()
-    category = session.query(Category).filter_by(slug = category_slug).one()
-    items = session.query(Item).filter_by(category_id = category.id)
-    count  = items.count()
+    category = session.query(Category).filter_by(slug=category_slug).one()
+    items = session.query(Item).filter_by(category_id=category.id)
+    count = items.count()
 
     if 'username' not in login_session:
         return render_template(
             'pages/public-category.html',
-            items = items,
-            category = category,
-            categories = categories,
-            count = count)
+            items=items,
+            category=category,
+            categories=categories,
+            count=count)
     else:
         return render_template(
             'pages/category.html',
-            category = category,
-            categories = categories,
-            items = items,
-            count = count)
+            category=category,
+            categories=categories,
+            items=items,
+            count=count)
 
 
-# Display one item
 @app.route('/locations/<string:category_slug>/<string:item_slug>/')
 def showItem(category_slug, item_slug):
+    """Display one item"""
     categories = session.query(Category).all()
-    item = session.query(Item).filter_by(slug = item_slug).one()
+    item = session.query(Item).filter_by(slug=item_slug).one()
     creator = getUserInfo(item.user_id)
 
     if (
-        'username' not in login_session
-        or creator.id != login_session['user_id']
+        'username' not in login_session or
+        creator.id != login_session['user_id']
     ):
         return render_template(
             'pages/public-item.html',
-            item = item,
-            categories = categories)
+            item=item,
+            categories=categories)
     else:
         return render_template(
             'pages/item.html',
-            item = item,
-            categories = categories)
+            item=item,
+            categories=categories)
 
 
-# Create a new item
-@app.route('/locations/new/', methods = ['GET', 'POST'])
+@app.route('/locations/new/', methods=['GET', 'POST'])
 def createNewItem():
+    """Create a new item"""
     if 'username' not in login_session:
         return redirect(url_for('showLogin'))
 
@@ -444,12 +448,12 @@ def createNewItem():
 
     if request.method == 'POST':
         newItem = Item(
-            name = request.form['name'],
-            slug = getSlug(request.form['name']),
-            description = request.form['description'],
-            address = request.form['address'],
-            category_id = request.form['category'],
-            user_id = login_session['user_id'])
+            name=request.form['name'],
+            slug=getSlug(request.form['name']),
+            description=request.form['description'],
+            address=request.form['address'],
+            category_id=request.form['category'],
+            user_id=login_session['user_id'])
         session.add(newItem)
         session.commit()
 
@@ -457,18 +461,18 @@ def createNewItem():
 
         return redirect(url_for('showCategoryList'))
     else:
-        return render_template('pages/new-item.html', categories = categories)
+        return render_template('pages/new-item.html', categories=categories)
 
 
-# Edit item
-@app.route('/locations/<string:item_slug>/edit', methods = ['GET', 'POST'])
+@app.route('/locations/<string:item_slug>/edit', methods=['GET', 'POST'])
 def editItem(item_slug):
+    """Edit item"""
     if 'username' not in login_session:
         return redirect(url_for('showLogin'))
 
-    item = session.query(Item).filter_by(slug = item_slug).one()
+    item = session.query(Item).filter_by(slug=item_slug).one()
     categories = session.query(Category).all()
-    category = session.query(Category).filter_by(id = item.category_id).one()
+    category = session.query(Category).filter_by(id=item.category_id).one()
 
     if item.user_id != login_session['user_id']:
         flash("You are not authorized to edit this art space")
@@ -496,19 +500,19 @@ def editItem(item_slug):
     else:
         return render_template(
             'pages/edit-item.html',
-            categories = categories,
-            item = item,
-            category = category)
+            categories=categories,
+            item=item,
+            category=category)
 
 
-# Delete item
-@app.route('/locations/<string:item_slug>/delete', methods = ['GET','POST'])
+@app.route('/locations/<string:item_slug>/delete', methods=['GET', 'POST'])
 def deleteItem(item_slug):
+    """Delete item"""
     if 'username' not in login_session:
         return redirect(url_for('showLogin'))
 
-    item = session.query(Item).filter_by(slug = item_slug).one()
-    category = session.query(Category).filter_by(id = item.category_id).one()
+    item = session.query(Item).filter_by(slug=item_slug).one()
+    category = session.query(Category).filter_by(id=item.category_id).one()
 
     if item.user_id != login_session['user_id']:
         flash("You are not authorized to delete this art space")
@@ -524,65 +528,70 @@ def deleteItem(item_slug):
     else:
         return render_template(
             'pages/delete-item.html',
-            item = item,
-            category = category
+            item=item,
+            category=category
         )
-
-
 
 # --------------------------------------
 # JSON APIs for application data
 # --------------------------------------
 
-# Returns JSON of all items grouped by categories
+
 @app.route('/locations-grouped/json')
 def ItemsGroupedJSON():
+    """Returns JSON of all items grouped by categories"""
     categories = session.query(Category).options(
         joinedload(Category.items)).all()
     return jsonify(
-        Category = [
+        Category=[
             dict(
                 c.serialize,
-                items = [
+                items=[
                     i.serialize for i in c.items]) for c in categories])
 
-# Returns JSON of all categories in the application
+
 @app.route('/location-types/json')
 def CategoriesJSON():
+    """Returns JSON of all categories in the application"""
     categories = session.query(Category).all()
-    return jsonify(Categories = [c.serialize for c in categories])
+    return jsonify(Categories=[c.serialize for c in categories])
 
-# Returns JSON for selected category
+
 @app.route('/location-types/<int:category_id>/json')
 def CategoryJSON(category_id):
-    category = session.query(Category).filter_by(id = category_id).one()
-    return jsonify(Category = category.serialize)
+    """Returns JSON for selected category"""
+    category = session.query(Category).filter_by(id=category_id).one()
+    return jsonify(Category=category.serialize)
 
-# Returns JSON of all items in the application
+
 @app.route('/locations/json')
 def ItemsJSON():
+    """Returns JSON of all items in the application"""
     items = session.query(Item).all()
-    return jsonify(Items = [i.serialize for i in items])
+    return jsonify(Items=[i.serialize for i in items])
 
-# Returns JSON for selected item
+
 @app.route('/locations/<int:item_id>/json')
 def ItemJSON(item_id):
-    item = session.query(Item).filter_by(id = item_id).one()
-    return jsonify(Item = item.serialize)
+    """Returns JSON for selected item"""
+    item = session.query(Item).filter_by(id=item_id).one()
+    return jsonify(Item=item.serialize)
 
-# Returns JSON of all users in the application
+
 @app.route('/users/json')
 def UsersJSON():
+    """Returns JSON of all users in the application"""
     users = session.query(User).all()
-    return jsonify(User = [u.serialize for u in users])
+    return jsonify(User=[u.serialize for u in users])
 
-# Returns JSON for selected user
+
 @app.route('/users/<int:user_id>/json')
 def UserJSON(user_id):
-    user = session.query(User).filter_by(id = user_id).one()
-    return jsonify(User = user.serialize)
+    """Returns JSON for selected user"""
+    user = session.query(User).filter_by(id=user_id).one()
+    return jsonify(User=user.serialize)
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     app.debug = True
-    app.run(host = '0.0.0.0', port = 8000)
+    app.run(host='0.0.0.0', port=8000)
